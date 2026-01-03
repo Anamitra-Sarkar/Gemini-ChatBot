@@ -3,12 +3,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Node.js dependencies and build artifacts
-node_modules/
-.next/
-out/
-package-lock.json
-
 # C extensions
 *.so
 
@@ -20,8 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-/lib/
-/lib64/
+lib/
+lib64/
 parts/
 sdist/
 var/

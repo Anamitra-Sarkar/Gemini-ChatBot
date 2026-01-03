@@ -42,14 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIdToken(token);
       // Let backend verify token and return normalized user
       try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-        if (!base) {
-          // If backend URL not configured, still set minimal state
-          setUser({ uid: u.uid, email: u.email, isAnonymous: u.isAnonymous, provider: u.providerId as any });
-          setLoading(false);
-          return;
-        }
-        const res = await axios.get(`${base}/auth/verify`, {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_VERCEL_URL || "http://localhost:8000"}/auth/verify`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(res.data.user);
