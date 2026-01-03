@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+gunicorn
+python-multipart
+python-jose
+firebase-admin
+aiofiles
+httpx
+python-dotenv
+google-generativeai
+requests

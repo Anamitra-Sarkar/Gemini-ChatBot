@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: gemini-clone-backend
+    env: python
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "gunicorn -k uvicorn.workers.UvicornWorker backend.app.main:app --bind 0.0.0.0:$PORT"
+    plan: free
+    envVars:
+      - key: JWT_SECRET
+      - key: GEMINI_API_KEY
+      - key: VEO_API_KEY
+      - key: NANO_BANANA_API_KEY
+      - key: FIREBASE_PRIVATE_KEY
+      - key: FIREBASE_CLIENT_EMAIL
+      - key: FIREBASE_PROJECT_ID

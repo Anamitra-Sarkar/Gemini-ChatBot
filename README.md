@@ -8,9 +8,6 @@ The Google Gemini-Pro Chat Application is a Streamlit-based web interface that f
 
 ## Getting Started
 
-To get started with the project, follow the steps below.
-
-### Prerequisites
 
 - Google Generativeai
 - Google API Key
@@ -41,6 +38,22 @@ To get started with the project, follow the steps below.
 
    ```bash
    streamlit run app.py
+## Local Development
+
+### Backend
+```
+python -m venv .venv
+. .venv/bin/activate
+pip install -r backend/requirements.txt
+uvicorn backend.app.main:app --reload --port 8000
+```
+
+### Frontend
+```
+cd frontend
+npm install
+npm run dev
+```
    ```
 
    The application will be accessible at [http://localhost:8501/](http://localhost:8501/).

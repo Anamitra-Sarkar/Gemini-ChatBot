@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users root
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // profile
+      match /profile/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // settings document
+      match /settings/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // chats collection
+      match /chats/{chatId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+
+        // messages subcollection
+        match /messages/{messageId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+    }
+  }
+}

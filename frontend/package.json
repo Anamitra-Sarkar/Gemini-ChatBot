@@ -1,0 +1,21 @@
+{
+  "name": "gemini-clone-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "14.0.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "tailwindcss": "^3.4.0",
+    "framer-motion": "^10.12.16",
+    "firebase": "^10.16.0",
+    "axios": "^1.4.0",
+    "react-markdown": "^8.0.7",
+    "remark-gfm": "^3.0.1"
+  }
+}
