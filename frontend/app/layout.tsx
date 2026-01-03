@@ -1,12 +1,7 @@
 "use client"
-import './globals.css'
+import '../globals.css'
 import { AuthProvider } from '../context/AuthContext'
 import LoginButton from '../components/auth/LoginButton'
-
-export const metadata = {
-  title: 'Gemini Clone',
-  description: 'Gemini Web clone (scaffold)'
-}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Auto sign-in anonymous if no user
     (async () => {
-      if (!auth.currentUser) {
+      if (auth && !auth.currentUser) {
         try {
           await signInAnonymous();
         } catch (e) {
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, firebaseUser, idToken, loading, signInAnonymously: async () => await signInAnonymous(), signOut: _signOut }}
+      value={{ user, firebaseUser, idToken, loading, signInAnonymously: async () => { await signInAnonymous(); }, signOut: _signOut }}
     >
       {children}
     </AuthContext.Provider>
