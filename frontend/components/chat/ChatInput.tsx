@@ -77,7 +77,12 @@ export default function ChatInput({ chatId, onStartStreaming, streaming, idToken
                   for (const f of files) {
                     const fd = new FormData();
                     fd.append("file", f, f.name);
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/files/upload`, {
+                    const base = process.env.NEXT_PUBLIC_BACKEND_URL;
+                    if (!base) {
+                      console.error("NEXT_PUBLIC_BACKEND_URL not configured");
+                      break;
+                    }
+                    const res = await fetch(`${base}/files/upload`, {
                       method: "POST",
                       body: fd,
                       headers: { Authorization: `Bearer ${idToken || ""}` },
