@@ -98,12 +98,6 @@ function MessageBubbleInner({ message, onRetry, onRegenerate, onFeedback }: { me
             <span className="text-sm text-red-400">Generation failed</span>
           </div>
         )}
-        {!isUser && status === "error" && (
-          <div className="mt-2 flex gap-2">
-            <button onClick={() => id && onRetry && onRetry(id)} className="px-2 py-1 bg-yellow-500 text-white rounded text-sm">Retry</button>
-            <span className="text-sm text-red-400">Generation failed</span>
-          </div>
-        )}
       </div>
     </div>
   );
