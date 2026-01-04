@@ -88,37 +88,59 @@ from firebase_admin import auth as firebase_auth, credentials
 
 
 def init_firebase():
+    """
+    Initialize Firebase Admin SDK with service account credentials.
+    Returns True if initialization succeeded, False otherwise.
+    Gracefully handles missing or invalid credentials.
+    """
     if firebase_admin._apps:
-        return
+        return True
+    
     proj_id = os.getenv("FIREBASE_PROJECT_ID")
     client_email = os.getenv("FIREBASE_CLIENT_EMAIL")
     private_key = os.getenv("FIREBASE_PRIVATE_KEY")
+    
     if not (proj_id and client_email and private_key):
-        # skip init in dev if creds missing — verification will fail later
-        return
-    # private_key in env may have escaped newlines
-    private_key = private_key.replace('\\n', '\n')
-    service_account = {
-        "type": "service_account",
-        "project_id": proj_id,
-        "private_key": private_key,
-        "client_email": client_email,
-    }
-    cred = credentials.Certificate(service_account)
-    firebase_admin.initialize_app(cred)
-
-    # initialize firestore client lazily
+        # Skip Firebase initialization if credentials are missing
+        logging.warning("Firebase credentials not fully configured. Firebase services will be unavailable.")
+        return False
+    
     try:
-        from firebase_admin import firestore as _fs
-        _fs.client()
-    except Exception:
-        pass
+        # private_key in env may have escaped newlines - handle both \n and \\n
+        private_key = private_key.replace('\\n', '\n')
+        
+        service_account = {
+            "type": "service_account",
+            "project_id": proj_id,
+            "private_key": private_key,
+            "client_email": client_email,
+        }
+        cred = credentials.Certificate(service_account)
+        firebase_admin.initialize_app(cred)
+        
+        # Test firestore client initialization
+        try:
+            from firebase_admin import firestore as _fs
+            _fs.client()
+        except Exception as e:
+            logging.warning(f"Firestore client initialization warning: {e}")
+        
+        logging.info("Firebase Admin SDK initialized successfully")
+        return True
+    except Exception as e:
+        logging.error(f"Failed to initialize Firebase Admin SDK: {e}")
+        return False
 
 
 init_firebase()
 
 
-REQUIRED_ENV_VARS = [
+# Environment variables split into REQUIRED (fatal if missing) and OPTIONAL (degraded features)
+# For now, we treat all as optional to allow graceful degradation
+# Adjust this list if certain vars become truly fatal for core operation
+REQUIRED_ENV_VARS = []  # Empty for now - all features degrade gracefully
+
+OPTIONAL_ENV_VARS = [
     "FIREBASE_PROJECT_ID",
     "FIREBASE_CLIENT_EMAIL",
     "FIREBASE_PRIVATE_KEY",
@@ -172,22 +194,38 @@ def check_and_increment_grounding_quota(uid: str) -> bool:
 
 @app.on_event("startup")
 def startup_checks():
-    # Validate critical env vars are present
-    missing = [k for k in REQUIRED_ENV_VARS if not os.getenv(k)]
+    """
+    Perform startup validation and diagnostics.
+    Logs warnings for missing optional services but does NOT exit.
+    Only truly fatal misconfigurations should prevent startup.
+    """
     errors = []
-    if missing:
-        errors.append({"missing_env_vars": missing})
-
-    # Verify Firestore connectivity
+    warnings = []
+    
+    # Check for missing optional environment variables
+    missing_optional = [k for k in OPTIONAL_ENV_VARS if not os.getenv(k)]
+    if missing_optional:
+        warnings.append({"missing_optional_env_vars": missing_optional})
+        logging.warning(f"Optional environment variables not set: {missing_optional}")
+    
+    # Check for missing required environment variables (if any)
+    missing_required = [k for k in REQUIRED_ENV_VARS if not os.getenv(k)]
+    if missing_required:
+        errors.append({"missing_required_env_vars": missing_required})
+        logging.error(f"Required environment variables not set: {missing_required}")
+    
+    # Verify Firestore connectivity (non-fatal)
     fs_ok = False
     try:
         from firebase_admin import firestore as _fs
         _fs.client().collections()
         fs_ok = True
+        logging.info("Firestore connectivity: OK")
     except Exception as e:
-        errors.append({"firestore_error": str(e)})
-
-    # Verify storage bucket access if configured
+        warnings.append({"firestore_warning": str(e)})
+        logging.warning(f"Firestore not available: {e}")
+    
+    # Verify storage bucket access if configured (non-fatal)
     storage_ok = False
     bucket_name = os.getenv("FIREBASE_STORAGE_BUCKET")
     if bucket_name:
@@ -197,21 +235,55 @@ def startup_checks():
             # attempt to get bucket metadata
             _ = b.name
             storage_ok = True
+            logging.info("Firebase Storage connectivity: OK")
         except Exception as e:
-            errors.append({"storage_error": str(e)})
+            warnings.append({"storage_warning": str(e)})
+            logging.warning(f"Firebase Storage not available: {e}")
     else:
-        errors.append({"storage_error": "FIREBASE_STORAGE_BUCKET not set"})
-
-    # External generator endpoints reachability (non-blocking, best-effort)
+        warnings.append({"storage_warning": "FIREBASE_STORAGE_BUCKET not set"})
+        logging.warning("Firebase Storage not configured")
+    
+    # External generator endpoints - check for API keys (non-fatal)
     gemini_ok = bool(os.getenv("GEMINI_API_KEY"))
     nano_ok = bool(os.getenv("NANO_BANANA_API_KEY"))
     veo_ok = bool(os.getenv("VEO_API_KEY"))
-
-    # If any hard failures, log grouped error and exit
-    if errors or not (fs_ok and storage_ok and gemini_ok and nano_ok and veo_ok):
-        grouped = {"ok": False, "checks": {"firestore": fs_ok, "storage": storage_ok, "gemini": gemini_ok, "nano_banana": nano_ok, "veo": veo_ok}, "errors": errors}
-        logging.error(json.dumps(grouped))
-        raise SystemExit("Startup validation failed; exiting")
+    tavily_ok = bool(os.getenv("TAVILY_API_KEY"))
+    
+    if not gemini_ok:
+        logging.warning("GEMINI_API_KEY not set - chat functionality will be unavailable")
+    if not nano_ok:
+        logging.warning("NANO_BANANA_API_KEY not set - image generation will be unavailable")
+    if not veo_ok:
+        logging.warning("VEO_API_KEY not set - video generation will be unavailable")
+    if not tavily_ok:
+        logging.warning("TAVILY_API_KEY not set - grounding/search will be unavailable")
+    
+    # Create startup diagnostics summary
+    diagnostics = {
+        "ok": len(errors) == 0,  # Only false if there are true errors
+        "checks": {
+            "firestore": fs_ok,
+            "storage": storage_ok,
+            "gemini": gemini_ok,
+            "nano_banana": nano_ok,
+            "veo": veo_ok,
+            "tavily": tavily_ok,
+        },
+        "warnings": warnings,
+        "errors": errors,
+    }
+    
+    # Log comprehensive startup diagnostics
+    logging.info(json.dumps({"startup_diagnostics": diagnostics}))
+    
+    # Only exit if there are truly fatal errors (required env vars missing)
+    if missing_required:
+        logging.error("Fatal: Required environment variables missing. Cannot start.")
+        raise SystemExit("Startup validation failed due to missing required configuration")
+    
+    # Otherwise, start normally with degraded features
+    if warnings:
+        logging.warning("Service started with some features unavailable. Check /health endpoint for details.")
 
 
 
@@ -246,7 +318,18 @@ def log_info(uid: Optional[str], request_id: Optional[str], msg: str, **kwargs):
 
 @app.get("/health")
 async def health():
-    checks = {"firestore": False, "storage": False, "gemini": False, "nano_banana": False, "veo": False}
+    """
+    Health check endpoint that reports status of all services and dependencies.
+    Returns 200 OK even if some services are unavailable, with details about each service.
+    """
+    checks = {"firestore": False, "storage": False, "gemini": False, "nano_banana": False, "veo": False, "tavily": False}
+    missing_env_vars = []
+    
+    # Check environment variables
+    for var in OPTIONAL_ENV_VARS:
+        if not os.getenv(var):
+            missing_env_vars.append(var)
+    
     # Firestore
     try:
         from firebase_admin import firestore as _fs
@@ -273,7 +356,18 @@ async def health():
     checks["tavily"] = bool(os.getenv("TAVILY_API_KEY"))
 
     ok = all(checks.values())
-    return {"ok": ok, "services": checks}
+    
+    response = {
+        "ok": ok,
+        "services": checks,
+    }
+    
+    # Include missing env vars if any, to help with debugging
+    if missing_env_vars:
+        response["missing_env_vars"] = missing_env_vars
+        response["message"] = "Some services unavailable due to missing configuration"
+    
+    return response
 
 
 @app.get("/auth/verify")
