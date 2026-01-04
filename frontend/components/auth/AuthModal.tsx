@@ -20,7 +20,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
             onClick={async () => {
               setLoading(true);
               try {
-                const current = auth.currentUser;
+                const current = auth?.currentUser;
                 if (current && current.isAnonymous) {
                   await linkWithGoogle(current);
                 } else {
@@ -74,7 +74,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                 onClick={async () => {
                   setLoading(true);
                   try {
-                    const current = auth.currentUser;
+                    const current = auth?.currentUser;
                     if (current && current.isAnonymous) {
                       await upgradeAnonymousWithEmail(current, email, password);
                     } else {
