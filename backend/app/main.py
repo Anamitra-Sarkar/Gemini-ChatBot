@@ -92,6 +92,8 @@ def init_firebase():
     Initialize Firebase Admin SDK with service account credentials.
     Returns True if initialization succeeded, False otherwise.
     Gracefully handles missing or invalid credentials.
+    
+    Returns early with True if Firebase app is already initialized.
     """
     if firebase_admin._apps:
         return True
@@ -136,9 +138,10 @@ init_firebase()
 
 
 # Environment variables split into REQUIRED (fatal if missing) and OPTIONAL (degraded features)
-# For now, we treat all as optional to allow graceful degradation
-# Adjust this list if certain vars become truly fatal for core operation
-REQUIRED_ENV_VARS = []  # Empty for now - all features degrade gracefully
+# Currently all env vars are optional to enable graceful degradation.
+# TODO: If any services become truly mandatory for core operation (e.g., authentication),
+# move them to REQUIRED_ENV_VARS. The startup will only abort if REQUIRED vars are missing.
+REQUIRED_ENV_VARS = []  # Currently empty - all features support graceful degradation
 
 OPTIONAL_ENV_VARS = [
     "FIREBASE_PROJECT_ID",
@@ -277,6 +280,8 @@ def startup_checks():
     logging.info(json.dumps({"startup_diagnostics": diagnostics}))
     
     # Only exit if there are truly fatal errors (required env vars missing)
+    # NOTE: REQUIRED_ENV_VARS is currently empty to support maximum graceful degradation.
+    # If any configuration becomes mandatory in the future, add it to REQUIRED_ENV_VARS.
     if missing_required:
         logging.error("Fatal: Required environment variables missing. Cannot start.")
         raise SystemExit("Startup validation failed due to missing required configuration")

@@ -186,7 +186,7 @@ This is **normal** if you haven't configured all services. The application will 
 
 ### Frontend build fails with "No Next.js version detected"
 
-**Solution**: Ensure you have Next.js ^14.3.0 in `frontend/package.json` dependencies (already updated in this version). Also verify that the Root Directory in Vercel is set to `frontend`.
+**Solution**: Ensure you have Next.js ^14.2.35 or later in `frontend/package.json` dependencies (already updated in this version). Also verify that the Root Directory in Vercel is set to `frontend`.
 
 ### Firebase initialization errors
 
