@@ -42,14 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIdToken(token);
       // Let backend verify token and return normalized user
       try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-        if (!base) {
-          // If backend URL not configured, still set minimal state
-          setUser({ uid: u.uid, email: u.email, isAnonymous: u.isAnonymous, provider: u.providerId as any });
-          setLoading(false);
-          return;
-        }
-        const res = await axios.get(`${base}/auth/verify`, {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_VERCEL_URL || "http://localhost:8000"}/auth/verify`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(res.data.user);
@@ -67,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Auto sign-in anonymous if no user
     (async () => {
-      if (!auth.currentUser) {
+      if (auth && !auth.currentUser) {
         try {
           await signInAnonymous();
         } catch (e) {
@@ -91,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, firebaseUser, idToken, loading, signInAnonymously: async () => await signInAnonymous(), signOut: _signOut }}
+      value={{ user, firebaseUser, idToken, loading, signInAnonymously: async () => { await signInAnonymous(); }, signOut: _signOut }}
     >
       {children}
     </AuthContext.Provider>

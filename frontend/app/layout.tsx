@@ -6,10 +6,6 @@ import LoginButton from '../components/auth/LoginButton'
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <title>Gemini Clone</title>
-        <meta name="description" content="Gemini Web clone (scaffold)" />
-      </head>
       <body>
         <AuthProvider>
           <div className="min-h-screen bg-slate-50 dark:bg-[#071422] text-slate-900 dark:text-white">

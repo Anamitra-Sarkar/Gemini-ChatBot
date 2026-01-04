@@ -26,12 +26,7 @@ export default function ChatLayout() {
     // initial load: fetch settings and chats
     (async () => {
       if (!idToken) return;
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-      if (!base) {
-        setError("NEXT_PUBLIC_BACKEND_URL not configured");
-        setSettingsLoaded(true);
-        return;
-      }
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       try {
         setError(null);
         const sres = await fetch(`${base}/settings`, { headers: { Authorization: `Bearer ${idToken}` } });
@@ -79,11 +74,7 @@ export default function ChatLayout() {
         setMessages([]);
         return;
       }
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-      if (!base) {
-        setError("NEXT_PUBLIC_BACKEND_URL not configured");
-        return;
-      }
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       try {
         setError(null);
         const res = await fetch(`${base}/history/chats/${activeId}`, { headers: { Authorization: `Bearer ${idToken}` } });
@@ -110,11 +101,7 @@ export default function ChatLayout() {
     // create chat server-side
     (async () => {
       if (!idToken) return;
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-      if (!base) {
-        setError("NEXT_PUBLIC_BACKEND_URL not configured");
-        return;
-      }
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       try {
         const res = await fetch(`${base}/history/chats`, {
           method: "POST",
@@ -146,11 +133,7 @@ export default function ChatLayout() {
     setError(null);
     // re-run initial load
     if (idToken) {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-      if (!base) {
-        setError("NEXT_PUBLIC_BACKEND_URL not configured");
-        return;
-      }
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       try {
         const cres = await fetch(`${base}/history/chats`, { headers: { Authorization: `Bearer ${idToken}` } });
         if (!cres.ok) throw new Error("Failed to load chats");
@@ -169,8 +152,7 @@ export default function ChatLayout() {
     // persist active chat to server settings
     (async () => {
       if (!idToken) return;
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-      if (!base) return;
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       try {
         await fetch(`${base}/settings`, {
           method: "PATCH",
@@ -199,14 +181,7 @@ export default function ChatLayout() {
     // handle modes: text (chat streaming), image (background generation), video (async job)
     if (mode === "image") {
       try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-        if (!base) {
-          setError("NEXT_PUBLIC_BACKEND_URL not configured");
-          setStreaming(false);
-          setInFlightRequest(null);
-          return;
-        }
-        const res = await fetch(`${base}/image/generate`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/image/generate`, {
           method: "POST",
           headers: { Authorization: `Bearer ${idToken}`, "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: message, chat_id: chatId, request_id, model: defaultModel || "gemini-2.0-flash" }),
@@ -215,6 +190,7 @@ export default function ChatLayout() {
         const j = await res.json();
         if (j.ok) {
           // refresh chat list and messages to show generating message
+          const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
           const cres = await fetch(`${base}/history/chats`, { headers: { Authorization: `Bearer ${idToken}` } });
           const cjson = await cres.json();
           setChats(cjson.chats || []);
@@ -237,14 +213,7 @@ export default function ChatLayout() {
 
     if (mode === "video") {
       try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-        if (!base) {
-          setError("NEXT_PUBLIC_BACKEND_URL not configured");
-          setStreaming(false);
-          setInFlightRequest(null);
-          return;
-        }
-        const res = await fetch(`${base}/video/generate`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/video/generate`, {
           method: "POST",
           headers: { Authorization: `Bearer ${idToken}`, "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: message, chat_id: chatId, request_id, model: defaultModel || "gemini-2.0-flash" }),
@@ -252,6 +221,7 @@ export default function ChatLayout() {
         });
         const j = await res.json();
         if (j.ok) {
+          const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
           const cres = await fetch(`${base}/history/chats`, { headers: { Authorization: `Bearer ${idToken}` } });
           const cjson = await cres.json();
           setChats(cjson.chats || []);
@@ -276,15 +246,7 @@ export default function ChatLayout() {
     // and return a meta event with chat_id and message_id. We wait for meta and then
     // read SSE token stream to update UI.
 
-    const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-    if (!base) {
-      setError("NEXT_PUBLIC_BACKEND_URL not configured");
-      setStreaming(false);
-      setInFlightRequest(null);
-      return;
-    }
-
-    const resp = await fetch(`${base}/chat/stream`, {
+    const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/chat/stream`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${idToken}`,
@@ -358,6 +320,7 @@ export default function ChatLayout() {
             if (event === "meta") {
               // server created/assigned chat and assistant message
               if (payload.chat_id) {
+                const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
                 try {
                   // refresh chat list
                   const cres = await fetch(`${base}/history/chats`, { headers: { Authorization: `Bearer ${idToken}` } });
@@ -405,6 +368,7 @@ export default function ChatLayout() {
               if (dev) console.log("stream completed duration_ms:", performance.now() - startTime);
               // refresh messages from server to ensure persisted state
               (async () => {
+                const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
                 try {
                   const chatToFetch = serverChatIdRef.current || activeId;
                   const res = await fetch(`${base}/history/chats/${chatToFetch}`, { headers: { Authorization: `Bearer ${idToken}` } });
@@ -454,11 +418,7 @@ export default function ChatLayout() {
   async function onRegenerate(messageId: string) {
     if (!idToken) return;
     if (streaming) return; // prevent rapid regenerate while another generation is in-flight
-    const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-    if (!base) {
-      setError("NEXT_PUBLIC_BACKEND_URL not configured");
-      return;
-    }
+    const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
     try {
       const res = await fetch(`${base}/history/messages/${messageId}/regenerate`, {
         method: "POST",
@@ -477,8 +437,7 @@ export default function ChatLayout() {
 
   async function onFeedback(messageId: string, score: number) {
     if (!idToken) return;
-    const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-    if (!base) return;
+    const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
     try {
       await fetch(`${base}/history/messages/${messageId}/feedback`, {
         method: "POST",
@@ -508,17 +467,7 @@ export default function ChatLayout() {
           <>
             <div className="p-2 border-b">
               <label className="mr-2">Model:</label>
-              <select value={defaultModel || ""} onChange={(e) => { 
-                setDefaultModel(e.target.value); 
-                const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-                if (base) {
-                  fetch(`${base}/settings`, { 
-                    method: "PATCH", 
-                    headers: { Authorization: `Bearer ${idToken}`, "Content-Type": "application/json" }, 
-                    body: JSON.stringify({ defaultModel: e.target.value }) 
-                  }); 
-                }
-              }}>
+              <select value={defaultModel || ""} onChange={(e) => { setDefaultModel(e.target.value); fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/settings`, { method: "PATCH", headers: { Authorization: `Bearer ${idToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ defaultModel: e.target.value }) }); }}>
                 {(availableModels.length ? availableModels : ["gemini-2.0-flash"]).map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>

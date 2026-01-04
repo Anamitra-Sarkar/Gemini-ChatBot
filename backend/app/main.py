@@ -598,7 +598,7 @@ async def chat_stream(request: Request, user=Depends(verify_firebase_token)):
         update_buffer = ""
         last_update = time.time()
         try:
-            try:
+                try:
                 token_stream = _gemini_token_stream(prompt, model, system_context=system_context)
             except Exception as e:
                 # mark error
