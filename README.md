@@ -153,10 +153,14 @@ The frontend will be available at http://localhost:3000
 
 1. **Import your repository** to [Vercel](https://vercel.com)
 
-2. **Configure project settings**:
-   - **Root Directory**: `frontend`
-   - **Framework Preset**: Next.js (auto-detected)
-   - Vercel will automatically detect build settings
+2. **Configure project settings** (CRITICAL):
+   - **Root Directory**: `frontend` ⚠️ **MUST BE SET** - This tells Vercel where package.json is located
+   - **Framework Preset**: Next.js (will be auto-detected once Root Directory is set)
+   - **Build Command**: Leave as default (`npm run build`)
+   - **Install Command**: Leave as default (`npm install`)
+   - **Output Directory**: Leave as default (`.next`)
+   
+   > **Important**: If you see "No Next.js version detected" error, verify that Root Directory is set to `frontend` in your Vercel project settings.
 
 3. **Set environment variables** in Vercel project settings:
    - Add all frontend environment variables listed above
@@ -186,7 +190,17 @@ This is **normal** if you haven't configured all services. The application will 
 
 ### Frontend build fails with "No Next.js version detected"
 
-**Solution**: Ensure you have Next.js ^14.2.35 or later in `frontend/package.json` dependencies (already updated in this version). Also verify that the Root Directory in Vercel is set to `frontend`.
+**Symptom**: Vercel build fails with error "No Next.js version detected. Make sure your package.json has 'next' in either 'dependencies' or 'devDependencies'"
+
+**Root Cause**: Vercel is looking for package.json in the wrong directory (repository root instead of frontend subdirectory)
+
+**Solution**: 
+1. In Vercel Dashboard → Project Settings → General → "Root Directory"
+2. Set to: `frontend` ⚠️ **This is required**
+3. Click "Save"
+4. Redeploy your project
+
+The vercel.json in the repository root is configured for this setup. Next.js (^14.2.35) is properly listed in `frontend/package.json` dependencies.
 
 ### Firebase initialization errors
 
