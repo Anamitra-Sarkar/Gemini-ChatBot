@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { auth, onAuthChange, onIdTokenChange, getIdToken, signInAnonymous, signOut } from "../lib/firebase";
+import { auth, onAuthChange, onIdTokenChange, getIdToken, signInAnonymous, signOut, isAuthAvailable } from "../lib/firebase";
 import type { User } from "firebase/auth";
 import axios from "axios";
 
@@ -19,6 +19,7 @@ type AuthContextType = {
   loading: boolean;
   signInAnonymously: () => Promise<void>;
   signOut: () => Promise<void>;
+  isAuthEnabled: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,8 +29,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser>(null);
   const [idToken, setIdToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthEnabled, setIsAuthEnabled] = useState(false);
 
   useEffect(() => {
+    // Check if auth is available
+    const authEnabled = isAuthAvailable();
+    setIsAuthEnabled(authEnabled);
+
+    if (!authEnabled) {
+      console.log('Firebase Auth is not configured. App will run without authentication.');
+      setLoading(false);
+      return;
+    }
+
     const unsub = onAuthChange(async (u) => {
       setFirebaseUser(u);
       if (!u) {
@@ -64,7 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           await signInAnonymous();
         } catch (e) {
-          // ignore
+          console.warn('Failed to sign in anonymously:', e);
+          setLoading(false);
         }
       }
     })();
@@ -76,15 +89,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function _signOut() {
+    if (!isAuthEnabled) {
+      console.warn('Auth is not enabled');
+      return;
+    }
     await signOut();
     setUser(null);
     setFirebaseUser(null);
     setIdToken(null);
   }
 
+  async function _signInAnonymously() {
+    if (!isAuthEnabled) {
+      console.warn('Auth is not enabled');
+      return;
+    }
+    await signInAnonymous();
+  }
+
   return (
     <AuthContext.Provider
-      value={{ user, firebaseUser, idToken, loading, signInAnonymously: async () => { await signInAnonymous(); }, signOut: _signOut }}
+      value={{ 
+        user, 
+        firebaseUser, 
+        idToken, 
+        loading, 
+        signInAnonymously: _signInAnonymously, 
+        signOut: _signOut,
+        isAuthEnabled 
+      }}
     >
       {children}
     </AuthContext.Provider>

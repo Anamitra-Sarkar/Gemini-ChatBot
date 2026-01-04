@@ -30,9 +30,17 @@ The Google Gemini-Pro Chat Application is a modern web interface that facilitate
 
 ## Environment Variables
 
+### 🎯 Graceful Degradation Support
+
+**Important**: The application is designed to build and deploy successfully even without API keys configured. Features that require API keys will be gracefully disabled with helpful user messages. You can add API keys at any time after deployment.
+
+See [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md) for detailed configuration guide.
+
 ### Required vs Optional Configuration
 
 The application uses **graceful degradation** - it will start and run with minimal configuration, but some features will be unavailable without their corresponding API keys.
+
+**Build Status Without API Keys**: ✅ Succeeds (both frontend and backend)
 
 ### Backend Environment Variables
 
@@ -57,6 +65,13 @@ VEO_API_KEY=your-veo-api-key                # Required for video generation
 TAVILY_API_KEY=your-tavily-api-key          # Required for web search grounding
 ```
 
+**What happens without these keys?**
+- ❌ Missing `GEMINI_API_KEY`: Chat endpoints return error, but server starts normally
+- ❌ Missing `NANO_BANANA_API_KEY`: Image generation unavailable
+- ❌ Missing `VEO_API_KEY`: Video generation unavailable
+- ❌ Missing `TAVILY_API_KEY`: Web search/grounding disabled
+- ✅ Application deploys and runs successfully in all cases
+
 #### Optional Configuration
 ```bash
 DEFAULT_MODEL=gemini-2.0-flash              # Default: gemini-2.0-flash
@@ -67,6 +82,7 @@ FRONTEND_ORIGIN=https://your-app.vercel.app # For CORS
 
 ### Frontend Environment Variables
 
+#### Firebase Configuration (Optional - auth disabled without these)
 ```bash
 NEXT_PUBLIC_FIREBASE_API_KEY=your-web-api-key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
@@ -74,6 +90,15 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+```
+
+**What happens without Firebase keys?**
+- ❌ Authentication features disabled with user-friendly message
+- ✅ App builds and deploys successfully
+- ✅ UI remains functional (just shows "auth not configured" in login modal)
+
+#### Backend Connection
+```bash
 NEXT_PUBLIC_API_BASE_URL=https://your-backend-url.onrender.com
 ```
 

@@ -8,8 +8,12 @@ import uuid
 import logging
 from typing import Optional
 import requests
+from app.tools import router as tools_router
 
 app = FastAPI(title="Gemini Clone Backend")
+
+# Include routers
+app.include_router(tools_router)
 
 
 # Structured JSON logging setup

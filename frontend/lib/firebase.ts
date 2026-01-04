@@ -25,14 +25,34 @@ const firebaseConfig = {
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
 };
 
-// Initialize Firebase only on client side
+// Check if Firebase config is valid (has required keys)
+function isFirebaseConfigValid(): boolean {
+  return Boolean(
+    firebaseConfig.apiKey && 
+    firebaseConfig.apiKey !== '' &&
+    firebaseConfig.projectId && 
+    firebaseConfig.projectId !== ''
+  );
+}
+
+// Initialize Firebase only on client side and only if config is valid
 let app;
 let auth: ReturnType<typeof getAuth> | undefined;
+let isFirebaseEnabled = false;
 
-if (typeof window !== 'undefined') {
-  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-  auth = getAuth(app);
-  setPersistence(auth, browserLocalPersistence);
+if (typeof window !== 'undefined' && isFirebaseConfigValid()) {
+  try {
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    auth = getAuth(app);
+    setPersistence(auth, browserLocalPersistence);
+    isFirebaseEnabled = true;
+    console.log('Firebase initialized successfully');
+  } catch (error) {
+    console.warn('Firebase initialization failed:', error);
+    isFirebaseEnabled = false;
+  }
+} else if (typeof window !== 'undefined') {
+  console.warn('Firebase config is incomplete. Auth features will be disabled. Please add NEXT_PUBLIC_FIREBASE_API_KEY and NEXT_PUBLIC_FIREBASE_PROJECT_ID environment variables.');
 }
 
 export { auth };
@@ -49,43 +69,67 @@ export function onIdTokenChange(callback: (user: User | null) => void) {
 }
 
 export async function getIdToken(user: User): Promise<string> {
+  if (!auth) {
+    console.warn('Firebase Auth not available');
+    return '';
+  }
   return await user.getIdToken();
 }
 
 export async function signInAnonymous() {
-  if (!auth) throw new Error('Auth not initialized');
+  if (!auth) {
+    console.warn('Firebase Auth not available - cannot sign in anonymously');
+    return null;
+  }
   return await signInAnonymously(auth);
 }
 
 export async function signOut() {
-  if (!auth) throw new Error('Auth not initialized');
+  if (!auth) {
+    console.warn('Firebase Auth not available');
+    return;
+  }
   return await firebaseSignOut(auth);
 }
 
 export async function signInWithGoogle() {
-  if (!auth) throw new Error('Auth not initialized');
+  if (!auth) {
+    throw new Error('Firebase Auth not initialized. Please configure Firebase environment variables.');
+  }
   const provider = new GoogleAuthProvider();
   return await signInWithPopup(auth, provider);
 }
 
 export async function signInWithEmail(email: string, password: string) {
-  if (!auth) throw new Error('Auth not initialized');
+  if (!auth) {
+    throw new Error('Firebase Auth not initialized. Please configure Firebase environment variables.');
+  }
   return await signInWithEmailAndPassword(auth, email, password);
 }
 
 export async function signUpWithEmail(email: string, password: string) {
-  if (!auth) throw new Error('Auth not initialized');
+  if (!auth) {
+    throw new Error('Firebase Auth not initialized. Please configure Firebase environment variables.');
+  }
   return await createUserWithEmailAndPassword(auth, email, password);
 }
 
 export async function upgradeAnonymousWithEmail(user: User, email: string, password: string) {
-  if (!auth) throw new Error('Auth not initialized');
+  if (!auth) {
+    throw new Error('Firebase Auth not initialized. Please configure Firebase environment variables.');
+  }
   const credential = EmailAuthProvider.credential(email, password);
   return await linkWithCredential(user, credential);
 }
 
 export async function linkWithGoogle(user: User) {
-  if (!auth) throw new Error('Auth not initialized');
+  if (!auth) {
+    throw new Error('Firebase Auth not initialized. Please configure Firebase environment variables.');
+  }
   const provider = new GoogleAuthProvider();
   return await linkWithPopup(user, provider);
+}
+
+export function isAuthAvailable(): boolean {
+  return isFirebaseEnabled && Boolean(auth);
 }

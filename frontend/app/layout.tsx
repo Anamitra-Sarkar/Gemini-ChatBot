@@ -1,19 +1,17 @@
 "use client"
 import '../globals.css'
 import { AuthProvider } from '../context/AuthContext'
-import LoginButton from '../components/auth/LoginButton'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" className="dark">
+      <head>
+        <title>Gemini Clone</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+      </head>
+      <body className="antialiased">
         <AuthProvider>
-          <div className="min-h-screen bg-slate-50 dark:bg-[#071422] text-slate-900 dark:text-white">
-            <header className="p-4 flex justify-end">
-              <LoginButton />
-            </header>
-            <main>{children}</main>
-          </div>
+          {children}
         </AuthProvider>
       </body>
     </html>

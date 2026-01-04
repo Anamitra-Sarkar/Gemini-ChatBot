@@ -5,7 +5,13 @@ import uuid
 from typing import AsyncGenerator
 
 import google.generativeai as genai
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Configure Gemini API only if key is available
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+if gemini_api_key:
+    genai.configure(api_key=gemini_api_key)
+else:
+    print("Warning: GEMINI_API_KEY not set. Gemini functionality will be disabled.")
 
 
 async def _gemini_token_stream(prompt: str, model: str, system_context: str | None = None) -> AsyncGenerator[str, None]:
